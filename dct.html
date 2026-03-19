@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>D聊-DeepSeek专属版</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :root {
+    --bg: #171717;
+    --sidebar: #111;
+    --nav: #1c1c1c;
+    --text: #eaeaea;
+    --subtext: #aaa;
+    --border: #333;
+    --primary: #3E9AE2;
+    --danger: #ff4444;
+    --bubble-user: #0066cc;
+    --bubble-ai: #222;
+    --input-bg: #222;
+    --font-size: 16px;
+  }
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    font-size: var(--font-size);
+  }
+  /* 登录界面 */
+  #loginWrapper {
+    position: fixed;
+    z-index: 99999;
+    left: 0; top: 0;
+    width: 100%;
+    height: 100%;
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 0 24px;
+  }
+  .loginBox {
+    width: 100%;
+    max-width: 380px;
+    background: #1c1c1c;
+    padding: 20px;
+    border-radius: 16px;
+  }
+  .loginTitle {
+    font-size: 20px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .loginTip {
+    color: var(--subtext);
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 20px;
+    line-height: 1.4;
+  }
+  .loginInput {
+    width: 100%;
+    padding: 12px 14px;
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 10px;
+    color: #fff;
+    font-size: var(--font-size);
+    margin-bottom: 16px;
+    outline: none;
+  }
+  .loginBtn {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: var(--font-size);
+    cursor: pointer;
+  }
+  .bottomInfo {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 12px;
+    color: var(--subtext);
+    line-height: 1.4;
+  }
+  /* 主界面 */
+  #app {
+    display: none;
+    width: 100%;
+    height: 100vh;
+    position: relative;
+  }
+  #sidebar {
+    width: 260px;
+    height: 100vh;
+    background: var(--sidebar);
+    position: fixed;
+    left: 0; top: 0;
+    z-index: 10;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  #sidebar.open {
+    transform: translateX(0);
+  }
+  .side-header {
+    padding: 16px;
+    font-size: calc(var(--font-size) + 2px);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #collapseBtn {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: var(--font-size);
+    cursor: pointer;
+  }
+  .font-size-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .font-size-bar button {
+    width: 36px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #222;
+    color: #fff;
+    font-size: var(--font-size);
+    cursor: pointer;
+  }
+  /* 公告按钮样式 */
+  .notice-btn {
+    margin: 12px;
+    padding: 10px;
+    background: #ff8800;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: var(--font-size);
+    cursor: pointer;
+    text-align: center;
+  }
+  .notice-btn:hover {
+    background: #ff9922;
+  }
+  .new-chat {
+    margin: 12px;
+    padding: 10px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: var(--font-size);
+    cursor: pointer;
+  }
+  .chat-list {
+    flex: 1;
+    overflow-y: auto;
+  }
+  .chat-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+    position: relative;
+    font-size: var(--font-size);
+  }
+  .chat-item.active {
+    background: #222;
+  }
+  .chat-item .del {
+    color: var(--danger);
+    font-size: var(--font-size);
+    cursor: pointer;
+    z-index: 2;
+  }
+  .side-bottom {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .side-btn {
+    padding: 10px;
+    background: #222;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 100%;
+    margin-bottom: 8px;
+    font-size: var(--font-size);
+    cursor: pointer;
+  }
+  #overlay {
+    position: fixed;
+    left: 0; top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    z-index: 9;
+  }
+  /* 标题生成加载 */
+  #titleLoading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    color: #fff;
+    font-size: var(--font-size);
+  }
+  /* 对话配置弹窗：固定尺寸340px + 仅按钮关闭 */
+  #chatConfigMask {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  #chatConfigDetail {
+    width: 100%;
+    max-width: 340px;
+    background: #1c1c1c;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #333;
+  }
+  .config-detail-title {
+    font-size: calc(var(--font-size) + 2px);
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    line-height: 1.2;
+  }
+  .config-detail-close {
+    color: var(--subtext);
+    font-size: calc(var(--font-size) + 4px);
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .config-detail-close:hover {
+    color: var(--text);
+  }
+  .config-item-row {
+    margin-bottom: 14px;
+  }
+  .config-item-label {
+    font-size: calc(var(--font-size) - 2px);
+    color: var(--subtext);
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+  .config-item-value {
+    font-size: var(--font-size);
+    color: var(--text);
+    padding: 8px 12px;
+    background: #222;
+    border-radius: 6px;
+    word-break: break-all;
+    line-height: 1.4;
+  }
+  /* 通用提示词容器：滑动 + 复制按钮（自定义/系统均适用） */
+  .prompt-wrap {
+    position: relative;
+  }
+  .prompt-value {
+    width: 100%;
+    height: 80px;
+    font-size: var(--font-size);
+    color: var(--text);
+    padding: 8px 12px;
+    background: #222;
+    border-radius: 6px;
+    word-break: break-all;
+    line-height: 1.4;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+  /* 通用复制按钮 */
+  .copy-btn {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    padding: 4px 8px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: calc(var(--font-size) - 4px);
+    cursor: pointer;
+    opacity: 0.9;
+  }
+  .copy-btn:hover {
+    opacity: 1;
+  }
+  /* 通用复制提示 */
+  .copy-tip {
+    font-size: calc(var(--font-size) - 4px);
+    color: var(--primary);
+    margin-top: 4px;
+    display: none;
+    text-align: right;
+  }
+  /* 聊天容器 */
+  #chat-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .chat-header {
+    background: var(--nav);
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+  #toggleSidebar {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: calc(var(--font-size) + 4px);
+    margin-right: 12px;
+    cursor: pointer;
+  }
+  .chat-title {
+    flex: 1;
+    text-align: center;
+    font-size: calc(var(--font-size) + 1px);
+  }
+  .api-tag {
+    font-size: calc(var(--font-size) - 4px);
+    color: var(--primary);
+    margin-left: 8px;
+    padding: 2px 6px;
+    border: 1px solid var(--primary);
+    border-radius: 10px;
+  }
+  #messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .msg {
+    max-width: 95%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+    font-size: var(--font-size);
+    line-height: 1.4;
+  }
+  .msg.user {
+    background: var(--bubble-user);
+    color: #fff;
+    align-self: flex-end;
+  }
+  .msg.ai {
+    background: var(--bubble-ai);
+    color: var(--text);
+    align-self: flex-start;
+  }
+  .loading {
+    max-width: 95%;
+    background: #222;
+    padding: 10px 14px;
+    border-radius: 16px;
+    color: var(--subtext);
+    align-self: flex-start;
+    font-size: var(--font-size);
+  }
+  .input-bar {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  #input {
+    flex: 1;
+    min-height: 44px;
+    max-height: 120px;
+    padding: 12px 16px;
+    background: var(--input-bg);
+    border: none;
+    border-radius: 22px;
+    color: #fff;
+    outline: none;
+    resize: none;
+    font-size: var(--font-size);
+    line-height: 1.4;
+  }
+  #send {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+  /* 通用弹窗 */
+  .base-modal {
+    position: fixed;
+    left: 0; top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+  .modal-box {
+    background: #1c1c1c;
+    width: 90%;
+    max-width: 340px;
+    padding: 20px;
+    border-radius: 14px;
+  }
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .modal-head span {
+    font-size: calc(var(--font-size) + 2px);
+    font-weight: 600;
+  }
+  .modal-close {
+    color: var(--text);
+    font-size: calc(var(--font-size) + 4px);
+    cursor: pointer;
+  }
+  .modal-body label {
+    display: block;
+    margin-top: 10px;
+    font-size: calc(var(--font-size) - 2px);
+    margin-bottom: 4px;
+  }
+  .modal-body input,
+  .modal-body textarea {
+    width: 100%;
+    padding: 10px;
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    outline: none;
+    font-size: var(--font-size);
+  }
+  .modal-body textarea {
+    min-height: 80px;
+    resize: none;
+  }
+  .switch-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+  }
+  .switch {
+    position: relative;
+    width: 40px;
+    height: 20px;
+    background: #444;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+  }
+  .switch.checked::after {
+    transform: translateX(20px);
+    background: var(--primary);
+  }
+  .modal-foot {
+    display: flex;
+    gap: 10px;
+  }
+  .modal-foot button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: var(--font-size);
+  }
+  .modal-foot .primary {
+    background: var(--primary);
+    color: #fff;
+  }
+  /* 新建对话AI配置弹窗 */
+  #chatConfigModal {
+    position: fixed;
+    left: 0; top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+  .config-modal-box {
+    background: #1c1c1c;
+    width: 90%;
+    max-width: 340px;
+    padding: 20px;
+    border-radius: 14px;
+  }
+  .config-item label {
+    font-size: calc(var(--font-size) - 2px);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .config-item select {
+    width: 100%;
+    padding: 10px;
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    outline: none;
+    font-size: var(--font-size);
+  }
+  .config-btn-group {
+    display: flex;
+    gap: 10px;
+  }
+  .config-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: var(--font-size);
+  }
+  .config-confirm {
+    background: var(--primary);
+    color: #fff;
+  }
+  .config-cancel {
+    background: #444;
+    color: var(--text);
+  }
+  .hide {
+    display: none !important;
+  }
+  /* 打赏弹窗样式 */
+  #rewardModal {
+    position: fixed;
+    left: 0; top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 99999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #rewardBox {
+    background: #1c1c1c;
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+    border: 1px solid #333;
+  }
+  #rewardTitle {
+    font-size: 18px;
+    color: var(--primary);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+  #rewardImg {
+    width: 100%;
+    max-width: 260px;
+    border-radius: 8px;
+    border: 1px solid #333;
+  }
+  #closeReward {
+    margin-top: 20px;
+    padding: 8px 24px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  /* 公告弹窗样式 */
+  #noticeModal {
+    position: fixed;
+    left: 0; top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #noticeBox {
+    background: #1c1c1c;
+    border: 1px solid #333;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 600px;
+    height: 80vh;
+    max-height: 500px;
+    position: relative;
+    overflow: hidden;
+  }
+  #closeNotice {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 50%;
+    color: #eaeaea;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  #closeNotice:hover {
+    background: #333;
+  }
+  #noticeIframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #171717;
+  }
+</style>
+</head>
+<body>
+<!-- 标题生成加载 -->
+<div id="titleLoading">正在生成专属标题...</div>
+<!-- 对话配置弹窗：双提示词复制+滑动 -->
+<div id="chatConfigMask">
+  <div id="chatConfigDetail">
+    <div class="config-detail-title">
+      <span>对话配置详情</span>
+      <div class="config-detail-close" id="closeConfigDetail">×</div>
+    </div>
+    <div class="config-item-row">
+      <div class="config-item-label">对话标题</div>
+      <div class="config-item-value" id="detailTitle">--</div>
+    </div>
+    <div class="config-item-row">
+      <div class="config-item-label">AI类型</div>
+      <div class="config-item-value" id="detailAiType">--</div>
+    </div>
+    <div class="config-item-row">
+      <div class="config-item-label">AI性别</div>
+      <div class="config-item-value" id="detailAiGender">--</div>
+    </div>
+    <!-- 自定义风格：滑动+复制按钮 -->
+    <div class="config-item-row">
+      <div class="config-item-label">自定义风格</div>
+      <div class="prompt-wrap">
+        <div class="prompt-value" id="detailAiStyle">--</div>
+        <button class="copy-btn" id="copyStyleBtn">复制</button>
+      </div>
+      <div class="copy-tip" id="copyStyleTip">已复制到剪贴板！</div>
+    </div>
+    <!-- 系统提示词：滑动+复制按钮 -->
+    <div class="config-item-row">
+      <div class="config-item-label">系统提示词</div>
+      <div class="prompt-wrap">
+        <div class="prompt-value" id="detailSystemPrompt">--</div>
+        <button class="copy-btn" id="copyPromptBtn">复制</button>
+      </div>
+      <div class="copy-tip" id="copyPromptTip">已复制到剪贴板！</div>
+    </div>
+  </div>
+</div>
+<!-- 登录界面 -->
+<div id="loginWrapper">
+  <div class="loginBox">
+    <div class="loginTitle">请输入密码<br>还有使用软件后不要清理缓存<br>否则数据都会没</div>
+    <div class="loginTip">密码加企鹅群获取：629741287</div>
+    <input type="password" class="loginInput" id="loginPwd" placeholder="请输入密码" autocomplete="off">
+    <button class="loginBtn" id="loginBtn">登录</button>
+  </div>
+  <div class="bottomInfo">
+    专属DeepSeek智能体 | 无需切换节点，直接使用
+  </div>
+</div>
+<!-- 主界面 -->
+<div id="app">
+  <div id="sidebar">
+    <div class="side-header">
+      <span>对话列表</span>
+      <button id="collapseBtn">←</button>
+    </div>
+    <div class="font-size-bar">
+      <button id="fontMinus">-</button>
+      <span>字体大小</span>
+      <button id="fontPlus">+</button>
+    </div>
+    <!-- 侧边栏顶部公告按钮 -->
+    <button class="notice-btn" id="openNoticeBtn">📢 官方公告</button>
+    <button class="new-chat" id="newChat">+ 新建对话</button>
+    <div id="chatList" class="chat-list"></div>
+    <div class="side-bottom">
+      <button class="side-btn" id="openSettings">设置</button>
+    </div>
+  </div>
+  <div id="overlay"></div>
+  <div id="chat-container">
+    <div class="chat-header">
+      <button id="toggleSidebar">☰</button>
+      <div class="chat-title" id="chatTitle">新对话</div>
+      <span class="api-tag" id="apiTag">DeepSeek</span>
+    </div>
+    <div id="messages"></div>
+    <div class="input-bar">
+      <div class="input-wrapper">
+        <textarea id="input" placeholder="想说点什么就跟我说吧..."></textarea>
+        <button id="send">↑</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 设置弹窗 -->
+<div id="modal" class="base-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span>设置</span>
+      <span class="modal-close" id="modalClose">✕</span>
+    </div>
+    <div class="modal-body">
+      <label>自己的API密钥</label>
+      <input type="password" id="userApiInput" placeholder="填写你自己的API">
+      <div class="switch-box">
+        <span style="font-size:14px">下次进入需输入密码</span>
+        <div class="switch" id="pwdCheckSwitch"></div>
+      </div>
+      <!-- 打赏作者按钮 -->
+      <button class="side-btn" style="margin-top:16px;width:100%;" id="openRewardBtn">打赏作者</button>
+    </div>
+    <div class="modal-foot">
+      <button id="modalCancel">取消</button>
+      <button class="primary" id="modalSave">保存</button>
+    </div>
+  </div>
+</div>
+<!-- 新建对话AI配置弹窗 -->
+<div id="chatConfigModal" class="base-modal">
+  <div class="config-modal-box">
+    <div class="modal-head">
+      <span>配置AI对话</span>
+      <span class="modal-close" id="configModalClose">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="config-item">
+        <label>AI类型</label>
+        <select id="aiTypeSelect">
+          <option value="emotion">情感陪伴AI</option>
+          <option value="tool">工具型AI</option>
+        </select>
+      </div>
+      <div class="config-item" id="aiGenderBox">
+        <label>AI性别</label>
+        <select id="aiGenderSelect">
+          <option value="male">男性</option>
+          <option value="female">女性</option>
+          <option value="neutral">中性</option>
+        </select>
+      </div>
+      <div class="config-item">
+        <label>回复风格（自定义描述）</label>
+        <textarea id="aiStyleInput" placeholder="请输入AI回复风格描述..."></textarea>
+      </div>
+    </div>
+    <div class="config-btn-group">
+      <button class="config-btn config-cancel" id="configCancel">取消</button>
+      <button class="config-btn config-confirm" id="configConfirm">确认创建</button>
+    </div>
+  </div>
+</div>
+<!-- 打赏弹窗 -->
+<div id="rewardModal">
+  <div id="rewardBox">
+    <div id="rewardTitle">自愿打赏 支持作者继续更新)</div>
+    <img src="1.png" alt="打赏码" id="rewardImg">
+    <button id="closeReward">关闭</button>
+  </div>
+</div>
+<!-- 公告弹窗 -->
+<div id="noticeModal">
+  <div id="noticeBox">
+    <div id="closeNotice">×</div>
+    <iframe src="https://cnyszb.github.io/gongao/Gongao.html" id="noticeIframe"></iframe>
+  </div>
+</div>
+
+<script>
+// DeepSeek专属配置
+const DEEPSEEK_CONFIG = {
+  apiUrl: "https://api.siliconflow.cn/v1/chat/completions",
+  model: "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B"
+};
+// 全局配置
+const DEFAULT_STYLE = {
+  emotion: '你是熟人聊天搭子，主打随性敢说、接地气怼梗，允许日常粗口、直白吐槽，纯口语化唠嗑，别端着、别官方，怎么自然怎么说，禁止用表情符号',
+  tool: '严谨专业，逻辑清晰，高效解答各类问题，回复简洁明了，直击重点，不啰嗦，禁止发任何表情符号'
+};
+const CORRECT_PWD = "2580";
+let config = JSON.parse(localStorage.getItem("config")) || {
+  userApi: "sk-dlnxdhgfxoniyqpzrgooivzrxoslffssodefeahfnrqdlzhr",
+  fontSize: 16,
+  needPwdCheck: false
+};
+let chats = JSON.parse(localStorage.getItem("chats")) || [{ 
+  title: "新对话", 
+  messages: [],
+  aiConfig: { type: "emotion", gender: "neutral", style: DEFAULT_STYLE.emotion }
+}];
+let currentChatIndex = 0;
+let currentChat = chats[currentChatIndex];
+// 长按相关变量
+let longPressTimer = null;
+const LONG_PRESS_TIME = 500;
+// 核心函数：构建系统提示词
+function buildSystemPrompt(aiConfig) {
+  const { type, gender, style } = aiConfig;
+  let genderPrompt = "";
+  if (type === "emotion") {
+    genderPrompt = gender === "male" ? "你的性别为男性，语气贴合男性说话方式；" : 
+                   gender === "female" ? "你的性别为女性，语气贴合女性说话方式；" : 
+                   "你的性别为中性，语气无明显性别特征；";
+  }
+  return `${genderPrompt}你是${type === "emotion" ? "情感陪伴AI" : "工具型AI"}，${style}；禁止使用任何表情符号，单个句号可保留，连续句号请删除，回复贴合设定风格。`;
+}
+// AI生成标题
+async function generateTitleByAI(aiType, aiGender, aiStyle) {
+  const genderMap = { male: "男性", female: "女性", neutral: "中性" };
+  const genderCn = genderMap[aiGender];
+  const prompt = `请为这个AI生成一个专属对话标题，要求：
+1. 标题长度4-8个字，简洁好记
+2. 贴合AI的属性：${aiType === "emotion" ? `情感陪伴AI，${genderCn}，风格：${aiStyle}` : `工具型AI，风格：${aiStyle}`}
+3. 不要多余标点，纯文字标题
+4. 符合AI的风格调性，情感型偏亲切，工具型偏专业`;
+  try {
+    let key = config.userApi;
+    if (!key) throw new Error("未配置API，使用默认标题");
+    const res = await fetch(DEEPSEEK_CONFIG.apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+      body: JSON.stringify({ model: DEEPSEEK_CONFIG.model, messages: [{ role: "user", content: prompt }], temperature: 0.8, max_tokens: 20 })
+    });
+    const data = await res.json();
+    let title = data.choices?.[0]?.message?.content.trim() || "";
+    if (!title || title.length < 4 || title.length > 8) throw new Error("标题长度不符合要求");
+    return title;
+  } catch (e) {
+    const styleKey = aiStyle.replace(/，|。|、/g, " ").split(" ").filter(w => w.length>1)[0] || (aiType==="emotion"?"闲聊":"解答");
+    return aiType === "emotion" ? `${genderMap[aiGender]}${styleKey}助手` : `${styleKey}工具AI`;
+  }
+}
+// 渲染对话列表
+function renderChatList() {
+  const list = document.getElementById("chatList");
+  list.innerHTML = "";
+  chats.forEach((chat, index) => {
+    const item = document.createElement("div");
+    item.className = `chat-item ${index === currentChatIndex ? "active" : ""}`;
+    item.innerHTML = `<span>${chat.title}</span><span class="del" data-index="${index}">✕</span>`;
+    
+    // 长按弹出配置弹窗
+    item.addEventListener("mousedown", (e) => {
+      if (e.target.classList.contains("del")) return;
+      longPressTimer = setTimeout(() => {
+        const aiConfig = chat.aiConfig;
+        const aiTypeCn = aiConfig.type === "emotion" ? "情感陪伴AI" : "工具型AI";
+        const genderCn = { male: "男性", female: "女性", neutral: "中性" }[aiConfig.gender] || "无";
+        // 填充弹窗数据
+        document.getElementById("detailTitle").innerText = chat.title;
+        document.getElementById("detailAiType").innerText = aiTypeCn;
+        document.getElementById("detailAiGender").innerText = aiConfig.type === "tool" ? "无" : genderCn;
+        document.getElementById("detailAiStyle").innerText = aiConfig.style;
+        document.getElementById("detailSystemPrompt").innerText = buildSystemPrompt(aiConfig);
+        // 显示弹窗
+        document.getElementById("chatConfigMask").style.display = "flex";
+        e.preventDefault();
+      }, LONG_PRESS_TIME);
+    });
+    // 移动端触摸适配
+    item.addEventListener("touchstart", (e) => {
+      if (e.target.classList.contains("del")) return;
+      longPressTimer = setTimeout(() => {
+        const aiConfig = chat.aiConfig;
+        const aiTypeCn = aiConfig.type === "emotion" ? "情感陪伴AI" : "工具型AI";
+        const genderCn = { male: "男性", female: "女性", neutral: "中性" }[aiConfig.gender] || "无";
+        document.getElementById("detailTitle").innerText = chat.title;
+        document.getElementById("detailAiType").innerText = aiTypeCn;
+        document.getElementById("detailAiGender").innerText = aiConfig.type === "tool" ? "无" : genderCn;
+        document.getElementById("detailAiStyle").innerText = aiConfig.style;
+        document.getElementById("detailSystemPrompt").innerText = buildSystemPrompt(aiConfig);
+        document.getElementById("chatConfigMask").style.display = "flex";
+        e.preventDefault();
+      }, LONG_PRESS_TIME);
+    });
+    // 取消长按
+    ["mouseup", "mouseleave", "touchend", "touchcancel"].forEach(event => {
+      item.addEventListener(event, () => clearTimeout(longPressTimer));
+    });
+    // 短按切换对话
+    item.addEventListener("click", (e) => {
+      if (e.target.classList.contains("del")) return;
+      currentChatIndex = index;
+      currentChat = chats[index];
+      renderChatList();
+      renderMessages();
+      document.getElementById("chatTitle").innerText = currentChat.title;
+      closeSidebar();
+    });
+    // 删除对话
+    item.querySelector(".del").addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (chats.length <= 1) { alert("至少保留一个对话"); return; }
+      chats.splice(index, 1);
+      currentChatIndex = 0;
+      currentChat = chats[0];
+      saveData();
+      renderChatList();
+      renderMessages();
+      document.getElementById("chatTitle").innerText = chats[0].title;
+    });
+    list.appendChild(item);
+  });
+}
+// 渲染聊天消息
+function renderMessages() {
+  const box = document.getElementById("messages");
+  box.innerHTML = "";
+  currentChat.messages.forEach(msg => {
+    const div = document.createElement("div");
+    div.className = `msg ${msg.role === "assistant" ? "ai" : "user"}`;
+    div.textContent = msg.content;
+    box.appendChild(div);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+// 保存数据到本地
+function saveData() {
+  localStorage.setItem("config", JSON.stringify(config));
+  localStorage.setItem("chats", JSON.stringify(chats));
+}
+// 关闭侧边栏
+function closeSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+}
+// 初始化密码开关
+function initPwdSwitch() {
+  const switchDom = document.getElementById("pwdCheckSwitch");
+  switchDom.classList.toggle("checked", config.needPwdCheck);
+  switchDom.onclick = () => switchDom.classList.toggle("checked", config.needPwdCheck = !config.needPwdCheck);
+}
+// 设置字体大小（全局生效）
+function setFontSize(size) {
+  config.fontSize = size;
+  document.documentElement.style.setProperty('--font-size', `${size}px`);
+  saveData();
+}
+// 切换AI性别选项显示/隐藏
+function toggleGenderBox() {
+  const aiType = document.getElementById("aiTypeSelect").value;
+  document.getElementById("aiGenderBox").classList.toggle("hide", aiType === "tool");
+  document.getElementById("aiStyleInput").value = DEFAULT_STYLE[aiType];
+}
+// 格式化AI回复
+function formatAiReply(reply) {
+  const emojiReg = /[\u{1F600}-\u{1F6FF}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]/gu;
+  return reply.replace(emojiReg, '').replace(/[。.]{2,}/g, '').trim() || (currentChat.aiConfig.type === "emotion" ? "咋了啊" : "暂无解答");
+}
+// 发送消息（仅DeepSeek调用）
+async function sendMsg() {
+  const text = document.getElementById("input").value.trim();
+  if (!text) return;
+  currentChat.messages.push({ role: "user", content: text });
+  document.getElementById("input").value = "";
+  renderMessages();
+  saveData();
+  const loading = document.createElement("div");
+  loading.className = "loading";
+  loading.textContent = currentChat.aiConfig.type === "emotion" ? "该咋回呢" : "正在思考...";
+  document.getElementById("messages").appendChild(loading);
+  document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+  try {
+    let key = config.userApi;
+    if (!key) throw new Error("请先在设置中配置API密钥");
+    const res = await fetch(DEEPSEEK_CONFIG.apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+      body: JSON.stringify({
+        model: DEEPSEEK_CONFIG.model,
+        messages: [{ role: "system", content: buildSystemPrompt(currentChat.aiConfig) }, ...currentChat.messages.map(m => ({ role: m.role, content: m.content }))],
+        temperature: currentChat.aiConfig.type === "emotion" ? 1.0 : 0.5,
+        top_p: 0.9,
+        max_tokens: 1000
+      })
+    });
+    const data = await res.json();
+    let reply = data.choices?.[0]?.message?.content || "";
+    reply = formatAiReply(reply);
+    loading.remove();
+    currentChat.messages.push({ role: "assistant", content: reply });
+    renderMessages();
+    saveData();
+  } catch (e) {
+    loading.remove();
+    const err = document.createElement("div");
+    err.className = "msg ai";
+    err.textContent = currentChat.aiConfig.type === "emotion" ? "网断了吧 连不上了" : `请求失败：${e.message}`;
+    document.getElementById("messages").appendChild(err);
+    document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+  }
+}
+// 复制自定义风格
+function copyStyleText() {
+  const styleText = document.getElementById("detailAiStyle").innerText;
+  if (styleText === "--") return;
+  navigator.clipboard.writeText(styleText).then(() => {
+    const tip = document.getElementById("copyStyleTip");
+    tip.style.display = "block";
+    setTimeout(() => tip.style.display = "none", 2000);
+  }).catch(() => {
+    alert("复制失败，请手动复制！");
+  });
+}
+// 复制系统提示词
+function copyPromptText() {
+  const promptText = document.getElementById("detailSystemPrompt").innerText;
+  if (promptText === "--") return;
+  navigator.clipboard.writeText(promptText).then(() => {
+    const tip = document.getElementById("copyPromptTip");
+    tip.style.display = "block";
+    setTimeout(() => tip.style.display = "none", 2000);
+  }).catch(() => {
+    alert("复制失败，请手动复制！");
+  });
+}
+// 初始化所有事件
+function initAll() {
+  initPwdSwitch();
+  setFontSize(config.fontSize);
+  renderChatList();
+  renderMessages();
+  // 侧边栏开关
+  document.getElementById("toggleSidebar").onclick = () => {
+    document.getElementById("sidebar").classList.add("open");
+    document.getElementById("overlay").classList.add("show");
+  };
+  document.getElementById("collapseBtn").onclick = closeSidebar;
+  document.getElementById("overlay").onclick = closeSidebar;
+  // 字体大小调整
+  document.getElementById("fontMinus").onclick = () => config.fontSize > 8 && setFontSize(config.fontSize - 1);
+  document.getElementById("fontPlus").onclick = () => setFontSize(config.fontSize + 1);
+  // 新建对话
+  document.getElementById("newChat").onclick = () => {
+    document.getElementById("aiTypeSelect").value = "emotion";
+    document.getElementById("aiGenderSelect").value = "neutral";
+    toggleGenderBox();
+    document.getElementById("chatConfigModal").style.display = "flex";
+    closeSidebar();
+  };
+  document.getElementById("configConfirm").onclick = async () => {
+    const aiType = document.getElementById("aiTypeSelect").value;
+    const aiGender = document.getElementById("aiGenderSelect").value;
+    const aiStyle = document.getElementById("aiStyleInput").value.trim() || DEFAULT_STYLE[aiType];
+    document.getElementById("titleLoading").style.display = "flex";
+    const chatTitle = await generateTitleByAI(aiType, aiGender, aiStyle);
+    document.getElementById("titleLoading").style.display = "none";
+    chats.unshift({ title: chatTitle, messages: [], aiConfig: { type: aiType, gender: aiGender, style: aiStyle } });
+    currentChatIndex = 0;
+    currentChat = chats[0];
+    saveData();
+    renderChatList();
+    renderMessages();
+    document.getElementById("chatTitle").innerText = chatTitle;
+    document.getElementById("chatConfigModal").style.display = "none";
+  };
+  // 设置弹窗
+  document.getElementById("openSettings").onclick = () => {
+    document.getElementById("userApiInput").value = config.userApi;
+    document.getElementById("modal").style.display = "flex";
+  };
+  document.getElementById("modalSave").onclick = () => {
+    config.userApi = document.getElementById("userApiInput").value.trim();
+    saveData();
+    document.getElementById("modal").style.display = "none";
+  };
+  // 发送消息
+  document.getElementById("send").onclick = sendMsg;
+  document.getElementById("input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+  });
+  // 通用弹窗关闭
+  document.querySelectorAll(".modal-close, .config-cancel, #modalCancel").forEach(btn => {
+    btn.onclick = () => {
+      document.getElementById("modal").style.display = "none";
+      document.getElementById("chatConfigModal").style.display = "none";
+    };
+  });
+  // 对话配置弹窗：仅按钮关闭
+  document.getElementById("closeConfigDetail").onclick = () => {
+    document.getElementById("chatConfigMask").style.display = "none";
+  };
+  // 绑定双复制按钮事件
+  document.getElementById("copyStyleBtn").onclick = copyStyleText;
+  document.getElementById("copyPromptBtn").onclick = copyPromptText;
+
+  // 打赏弹窗核心逻辑
+  const rewardModal = document.getElementById("rewardModal");
+  const openRewardBtn = document.getElementById("openRewardBtn");
+  const closeReward = document.getElementById("closeReward");
+  openRewardBtn.onclick = () => {
+    rewardModal.style.display = "flex";
+    document.getElementById("modal").style.display = "none";
+  };
+  closeReward.onclick = () => {
+    rewardModal.style.display = "none";
+  };
+  rewardModal.onclick = (e) => {
+    if (e.target === rewardModal) rewardModal.style.display = "none";
+  };
+
+  // 公告弹窗核心逻辑
+  const noticeModal = document.getElementById("noticeModal");
+  const openNoticeBtn = document.getElementById("openNoticeBtn");
+  const closeNotice = document.getElementById("closeNotice");
+  // 点击侧边栏公告按钮打开
+  openNoticeBtn.onclick = () => {
+    noticeModal.style.display = "flex";
+    closeSidebar();
+  };
+  // 点击右上角×关闭
+  closeNotice.onclick = () => {
+    noticeModal.style.display = "none";
+  };
+  // 点击弹窗外层空白处关闭
+  noticeModal.onclick = (e) => {
+    if (e.target === noticeModal) noticeModal.style.display = "none";
+  };
+}
+// 页面加载初始化
+window.onload = () => {
+  if (!config.needPwdCheck) {
+    document.getElementById("loginWrapper").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    initAll();
+    // 登录后自动弹出公告
+    setTimeout(() => {
+      document.getElementById("noticeModal").style.display = "flex";
+    }, 500);
+  }
+  // 登录验证
+  document.getElementById("loginBtn").onclick = () => {
+    if (document.getElementById("loginPwd").value.trim() === CORRECT_PWD) {
+      document.getElementById("loginWrapper").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      initAll();
+      // 登录成功后自动弹出公告
+      setTimeout(() => {
+        document.getElementById("noticeModal").style.display = "flex";
+      }, 500);
+    } else {
+      alert("密码错误");
+    }
+  };
+  // AI类型切换
+  document.getElementById("aiTypeSelect").addEventListener("change", toggleGenderBox);
+};
+</script>
+</body>
+</html>
